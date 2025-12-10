@@ -44,6 +44,7 @@ DRINK_OPTIONS = {
 peer_notify_last = {}
 motivation_last_at = 0
 last_temp_message = {}
+last_system_message = {}
 MOTIVATION_MESSAGES = [
     "Кофе ждёт вас! Заряд бодрости уже на подходе.",
     "Лучшие решения приходят с чашкой кофе. Вперёд!",
@@ -129,19 +130,33 @@ def schedule_auto_delete(message: types.Message):
 
 
 async def answer_clean(message: types.Message, text: str, reply_markup=None):
-    return await message.answer(text, reply_markup=reply_markup)
+    prev_id = last_system_message.get(message.chat.id)
+    if prev_id:
+        await delete_message_by_id(message.chat.id, prev_id)
+    msg = await message.answer(text, reply_markup=reply_markup)
+    last_system_message[message.chat.id] = msg.message_id
+    schedule_auto_delete(msg)
+    return msg
 
 
 async def send_clean(chat_id: int, text: str, reply_markup=None):
-    return await bot.send_message(chat_id, text, reply_markup=reply_markup)
-
-
-async def send_temp(chat_id: int, text: str, reply_markup=None):
-    prev_id = last_temp_message.get(chat_id)
+    prev_id = last_system_message.get(chat_id)
     if prev_id:
         await delete_message_by_id(chat_id, prev_id)
     msg = await bot.send_message(chat_id, text, reply_markup=reply_markup)
-    last_temp_message[chat_id] = msg.message_id
+    last_system_message[chat_id] = msg.message_id
+    schedule_auto_delete(msg)
+    return msg
+
+
+async def send_temp(chat_id: int, text: str, reply_markup=None, allow_multiple: bool = False):
+    if not allow_multiple:
+        prev_id = last_temp_message.get(chat_id)
+        if prev_id:
+            await delete_message_by_id(chat_id, prev_id)
+    msg = await bot.send_message(chat_id, text, reply_markup=reply_markup)
+    if not allow_multiple:
+        last_temp_message[chat_id] = msg.message_id
     schedule_auto_delete(msg)
     return msg
 
@@ -361,7 +376,7 @@ async def check_coffee_status():
 
         for u in users:
             try:
-                await send_temp(u["user_id"], text, reply_markup=notify_markup)
+                await send_temp(u["user_id"], text, reply_markup=notify_markup, allow_multiple=True)
             except Exception as e:
                 logging.error(f"Failed to send message to {u['user_id']}: {e}")
 
