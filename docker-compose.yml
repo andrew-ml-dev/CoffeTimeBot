@@ -1,0 +1,56 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: coffee_bot
+      POSTGRES_USER: coffee
+      POSTGRES_PASSWORD: coffee
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U coffee -d coffee_bot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  bot:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: coffee_bot
+      DB_USER: coffee
+      DB_PASSWORD: coffee
+      DEFAULT_INVITE_CODE: WELCOME123
+    # Uncomment to develop with live code edits:
+    # volumes:
+    #   - .:/app
+
+  pgweb:
+    image: sosedoff/pgweb:latest
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8081:8081"
+    environment:
+      PGWEB_DATABASE_URL: postgres://coffee:coffee@db:5432/coffee_bot?sslmode=disable
+    # Optional basic auth (uncomment to enable)
+    # environment:
+    #   PGWEB_DATABASE_URL: postgres://coffee:coffee@db:5432/coffee_bot?sslmode=disable
+    #   PGWEB_AUTH_USER: admin
+    #   PGWEB_AUTH_PASS: adminpass
+
+volumes:
+  db_data:
+
