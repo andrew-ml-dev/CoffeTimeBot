@@ -42,6 +42,7 @@ DRINK_OPTIONS = {
 # rate-limit state (in-memory)
 peer_notify_last = {}
 motivation_last_at = 0
+last_prompt_message = {}
 MOTIVATION_MESSAGES = [
     "Кофе ждёт вас! Заряд бодрости уже на подходе.",
     "Лучшие решения приходят с чашкой кофе. Вперёд!",
@@ -151,6 +152,15 @@ async def delete_message_safe(message: types.Message | None):
         return
     try:
         await message.delete()
+    except Exception:
+        pass
+
+
+async def delete_message_by_id(chat_id: int, message_id: int | None):
+    if not message_id:
+        return
+    try:
+        await bot.delete_message(chat_id, message_id)
     except Exception:
         pass
 
@@ -631,11 +641,15 @@ async def send_desire_prompts():
     for u in users:
         if u["desire"] < current_threshold():
             try:
-                await send_temp(
+                prev = last_prompt_message.get(u["user_id"])
+                if prev:
+                    await delete_message_by_id(u["user_id"], prev)
+                msg = await send_temp(
                     u["user_id"],
                     "Напомни свой текущий уровень желания кофе:",
                     reply_markup=level_keyboard(),
                 )
+                last_prompt_message[u["user_id"]] = msg.message_id
             except Exception as e:
                 logging.error(f"Failed to prompt user {u['user_id']}: {e}")
 
