@@ -14,6 +14,7 @@ import database
 load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 DEFAULT_INVITE_CODE = os.getenv("DEFAULT_INVITE_CODE")
+MESSAGE_TTL = int(os.getenv("MESSAGE_TTL", "3600"))
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -64,20 +65,12 @@ def main_menu() -> InlineKeyboardMarkup:
 
 def level_keyboard() -> InlineKeyboardMarkup:
     """Inline keyboard with levels 0-10 plus back button."""
-    quick_row = [
-        InlineKeyboardButton(text="0", callback_data="level:0"),
-        InlineKeyboardButton(text="5", callback_data="level:5"),
-        InlineKeyboardButton(text="7", callback_data="level:7"),
-        InlineKeyboardButton(text="10", callback_data="level:10"),
+    rows = [
+        [InlineKeyboardButton(text=str(n), callback_data=f"level:{n}") for n in [0, 1, 2, 3]],
+        [InlineKeyboardButton(text=str(n), callback_data=f"level:{n}") for n in [4, 5, 6, 7]],
+        [InlineKeyboardButton(text=str(n), callback_data=f"level:{n}") for n in [8, 9, 10]],
     ]
-    buttons = [quick_row]
-    levels = [1, 2, 3, 4, 6, 8, 9]
-    for i in range(0, len(levels), 4):
-        row = [
-            InlineKeyboardButton(text=str(level), callback_data=f"level:{level}")
-            for level in levels[i : i + 4]
-        ]
-        buttons.append(row)
+    buttons = rows
     buttons.append(
         [
             InlineKeyboardButton(text="➖ -1", callback_data="adjust:-1"),
