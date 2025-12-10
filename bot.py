@@ -93,8 +93,10 @@ def build_status_text(users: list[dict]) -> str:
     text = "Текущий статус желания кофе:\n"
     for u in users:
         status_icon = "🟢" if u["desire"] >= threshold else "🔴"
-        drink = drink_label(u.get("desire_type"))
-        text += f"{status_icon} {u['username']}: {u['desire']}/10 ({drink})\n"
+        drink_part = ""
+        if u["desire"] >= threshold:
+            drink_part = f" ({drink_label(u.get('desire_type'))})"
+        text += f"{status_icon} {u['username']}: {u['desire']}/10{drink_part}\n"
     return text
 
 
