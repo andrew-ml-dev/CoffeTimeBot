@@ -344,11 +344,18 @@ async def handle_set_level(callback: types.CallbackQuery):
     database.log_event("set_desire", user_id, username, info=f"level:{level}")
 
     await callback.answer("Обновлено")
-    await answer_clean(
-        callback.message,
-        f"Уровень желания установлен: {level}/10. Шаг 2/2: выбери напиток.",
-        reply_markup=drink_keyboard(),
-    )
+    if level >= current_threshold():
+        await answer_clean(
+            callback.message,
+            f"Уровень желания установлен: {level}/10. Шаг 2/2: выбери напиток.",
+            reply_markup=drink_keyboard(),
+        )
+    else:
+        await answer_clean(
+            callback.message,
+            f"Уровень желания установлен: {level}/10. Напиток пока не выбираем (ниже порога).",
+            reply_markup=main_menu(),
+        )
     await delete_message_safe(callback.message)
     await check_coffee_status()
 
